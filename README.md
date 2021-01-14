@@ -2,6 +2,7 @@
 ### Server
 - User login
 - Store data
+- Receive messages
 ### Moderator 1
 - Moderate messages
 - Calculate 'Bad' words
