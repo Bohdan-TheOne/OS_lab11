@@ -12,6 +12,8 @@
 #include <stdio.h>
 #include <algorithm>
 #include <fstream>
+#include <vector>
+#include <ctime>
 #include "json/json.h"
 
 #pragma comment (lib, "Ws2_32.lib")

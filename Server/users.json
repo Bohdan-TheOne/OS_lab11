@@ -4,19 +4,19 @@
 		{
 			"admin" : true,
 			"fault" : 0,
-			"login" : "Zumori",
+			"login" : "zumori",
 			"passw" : "arisiba"
 		},
 		{
 			"admin" : true,
 			"fault" : 0,
-			"login" : "Fanteak",
+			"login" : "fanteak",
 			"passw" : "230818"
 		},
 		{
 			"admin" : false,
 			"fault" : 0,
-			"login" : "Yuri",
+			"login" : "yuri",
 			"passw" : "yuriTheTop"
 		}
 	],
