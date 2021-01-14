@@ -1,0 +1,24 @@
+{
+	"idList" : 
+	[
+		{
+			"admin" : true,
+			"fault" : 0,
+			"login" : "Zumori",
+			"passw" : "arisiba"
+		},
+		{
+			"admin" : true,
+			"fault" : 0,
+			"login" : "Fanteak",
+			"passw" : "230818"
+		},
+		{
+			"admin" : false,
+			"fault" : 0,
+			"login" : "Yuri",
+			"passw" : "yuriTheTop"
+		}
+	],
+	"number" : 3
+}
