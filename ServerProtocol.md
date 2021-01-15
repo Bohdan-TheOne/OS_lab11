@@ -13,3 +13,9 @@
 ### As Moderator only
 - **SET** - *Moderate messages*
 - **FAULT** - *Get fault list*
+
+## User
+- **ERR** - *Error message*
+- **INF** - *Informational message*
+- **EDI** - *To main moder to edit messages*
+- **MSG** - *Message from users*
