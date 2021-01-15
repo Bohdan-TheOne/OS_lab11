@@ -14,7 +14,7 @@
 			"passw" : "230818"
 		},
 		{
-			"admin" : false,
+			"admin" : true,
 			"fault" : 0,
 			"login" : "yuri",
 			"passw" : "yuriTheTop"

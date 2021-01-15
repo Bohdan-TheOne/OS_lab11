@@ -2,8 +2,13 @@
 
 using namespace std;
 
+HANDLE mutx;
+static vector<SOCKET> clients;
+const int MAX_FAULT = 20;
+
 unsigned int __stdcall ClientTread(void* threadParam) {
 	SOCKET client = (SOCKET)threadParam;
+	clients.push_back(client);
 
 	char buff[512];
 	int msgSize;
@@ -14,31 +19,32 @@ unsigned int __stdcall ClientTread(void* threadParam) {
 	bool admin = false;
 
 	NewLog(vector<string>{ "SERVER", "Client connected" });
-	strcpy(buff, "#Server Ready.\r\n");
-	send(client, buff, strlen(buff), 0);
 	while (true) {
 		msgSize = recv(client, buff, 512, 0);
-		if (msgSize == SOCKET_ERROR)
+		if (msgSize == SOCKET_ERROR) {
+			NewLog(vector<string>{ "ERROR", "socket error" });
 			break;
+		}
 		buff[msgSize] = 0;
 		NewLog(vector<string>{ "SERVER", "Message recieved" });
 		if (parseCMD(buff, cmd, params)) {
-			if (cmd == "QUIT")
+			if (cmd == "QUIT") {
 				NewLog(vector<string>{ cmd, username });
 				break;
+			}
 			if (cmd == "AUTH") {
 				if (auth) {
 					NewLog(vector<string>{ cmd, username, "Already logined" });
-					strcpy(buff, "#You are already logged in.\r\n");
+					strcpy(buff, "!You are already logged in.\r\n");
 				} else {
 					int success = CreateUser(params, username);
 					if (success < 0) {
 						NewLog(vector<string>{ cmd, username, "Invalid command" });
-						strcpy(buff, "#Can`t recognise command.\r\n");
+						strcpy(buff, "!Can`t recognise command.\r\n");
 					}
 					else if (success > 0) {
 						NewLog(vector<string>{ cmd, username, "Username taken" });
-						strcpy(buff, "#This username is taken.\r\n");
+						strcpy(buff, "!This username is taken.\r\n");
 					}
 					else {
 						NewLog(vector<string>{ cmd, username, "Account created" });
@@ -51,12 +57,12 @@ unsigned int __stdcall ClientTread(void* threadParam) {
 			if (cmd == "LOGIN") {
 				if (auth) {
 					NewLog(vector<string>{ cmd, username, "Already logined" });
-					strcpy(buff, "#You are already logged in.\r\n");
+					strcpy(buff, "!You are already logged in.\r\n");
 				} else {
 					int success = LogInUser(params, username, admin);
 					if (success < 0) {
 						NewLog(vector<string>{ cmd, username, "Invalid command" });
-						strcpy(buff, "#Can`t recognise command.\r\n");
+						strcpy(buff, "!Can`t recognise command.\r\n");
 					}
 					else if (success == 1) {
 						NewLog(vector<string>{ cmd, username, "Wrong password" });
@@ -76,8 +82,14 @@ unsigned int __stdcall ClientTread(void* threadParam) {
 			}
 			if (cmd == "SEND") {
 				if (auth) {
-					GetMsg(params, username, admin);
-					NewLog(vector<string>{ cmd, username, "Message recieved" });
+					if (GetMsg(params, username, admin)) {
+						NewLog(vector<string>{ cmd, username, "Message recieved" });
+					}
+					else {
+						NewLog(vector<string>{ cmd, username, "User is banned" });
+						strcpy(buff, "!Bad words exceded.\r\n");
+						send(client, buff, strlen(buff), 0);
+					}
 				}
 				else {
 					NewLog(vector<string>{ cmd, username, "User not logged" });
@@ -85,6 +97,28 @@ unsigned int __stdcall ClientTread(void* threadParam) {
 					send(client, buff, strlen(buff), 0);
 				}
 			}
+			if (cmd == "SET") {
+				if (admin) {
+					string tUser;
+					int success = SetFaults(params, tUser);
+					if (success == -1) {
+						NewLog(vector<string>{ cmd, params, username, "Invalid command" });
+					} 
+					else if (success == -2) {
+						NewLog(vector<string>{ cmd, params, username, "No such user" });
+					}
+					else {
+						NewLog(vector<string>{ cmd, tUser, "faults set to " + to_string(success) });
+					}
+				}
+				else {
+					NewLog(vector<string>{ cmd, username, "User is not admin" });
+					strcpy(buff, "!You do not have rights to do it.\r\n");
+					send(client, buff, strlen(buff), 0);
+				}
+			}
+			//GETUSERS
+			//?3 zumori 5 fanteak 2 yuri 143
 		}
 		else {
 			NewLog(vector<string>{ cmd, username, "Invalid command" });
@@ -96,11 +130,11 @@ unsigned int __stdcall ClientTread(void* threadParam) {
 }
 
 string trim(const string& str) {
-	size_t first = str.find_first_not_of(' ');
+	int first = str.find_first_not_of(' ');
 	if (string::npos == first) {
 		return str;
 	}
-	size_t last = str.find_last_not_of(' ');
+	int last = str.find_last_not_of(' ');
 	return str.substr(first, (last - first + 1));
 }
 
@@ -119,7 +153,7 @@ bool parseCMD(char* str, std::string& cmd, std::string& params) {
 	params = tmp.substr(n + 1, tmp.length());
 	cmd = trim(cmd);
 	params = trim(params);
-	if ((cmd != "AUTH") && (cmd != "FILE") && (cmd != "LOGIN"))
+	if ((cmd != "AUTH") && (cmd != "FILE") && (cmd != "LOGIN") && cmd != "SET")
 		return false;
 	return true;
 	return false;
@@ -132,7 +166,6 @@ bool UserId(string str, string& login, string& passwd) {
 	}
 	login = str.substr(0, n);
 	passwd = str.substr(n + 1, str.length());
-	login = trim(login);
 	passwd = trim(passwd);
 	std::transform(login.begin(), login.end(), login.begin(), ::tolower);
 	return true;
@@ -172,13 +205,11 @@ int LogInUser(string str, string& user, bool& admin) {
 	if (!UserId(str, login, password)) {
 		return -1;
 	}
-	cout << "|" << login << "|" << password << "|" << endl;
 	Json::Value userList;
 	ifstream fin;
 	fin.open("users.json");
 	fin >> userList;
 	fin.close();
-	cout << userList << endl;
 	int n = userList.get("number", 0).asInt();
 	for (int i = 0; i < n; ++i) {
 		if (login == userList.get("idList", 0)[i]["login"].asString()) {
@@ -197,15 +228,80 @@ int LogInUser(string str, string& user, bool& admin) {
 	return 2;
 }
 
+int GetUserFault(string login) {
+	Json::Value userList;
+	ifstream fin;
+	fin.open("users.json");
+	fin >> userList;
+	fin.close();
+	int n = userList.get("number", 0).asInt();
+	for (int i = 0; i < n; ++i) {
+		if (login == userList.get("idList", 0)[i]["login"].asString()) {
+			 return userList.get("idList", 0)[i]["fault"].asInt();
+		}
+	}
+	return -1;
+}
+
 bool GetMsg(string str, string& user, bool admin) {
 	ofstream fout;
-	fout.open("chatLog.txt", fstream::in | fstream::out | fstream::app);
-	if (admin) {
-		fout << "<M> ";
+	stringstream ss;
+	if (GetUserFault(user) >= MAX_FAULT) {
+		return false;
 	}
-	fout << user << " : " << str << endl;
+	WaitForSingleObject(mutx, INFINITE);
+	if (admin) {
+		ss << "<M> ";
+	}
+	ss << user << " : " << str << endl;
+	fout.open("chatLog.txt", fstream::in | fstream::out | fstream::app);
+	fout << ss.str();
 	fout.close();
+	msgDistr(ss.str());
+	ReleaseMutex(mutx);
 	return true;
+}
+
+//SET <M> fanteak : let`s play csgo
+//SET yuri 1 let`s play ****
+
+int SetFaults(string param, string& tUser) {
+	string user, numStr;
+	if (!UserId(param, user, numStr)) {
+		return -1;		// Wrong command
+	}
+	int n;
+	try {
+		n = stoi(numStr);
+	} 
+	catch (...) {
+		return -1;
+	}
+	if (n < 0) {
+		return -1;
+	}
+
+	Json::Value userList;
+	ifstream fin;
+	fin.open("users.json");
+	fin >> userList;
+	fin.close();
+	int faults = -1;
+
+	int number = userList.get("number", 0).asInt();
+	int i = 0;
+	for (i = 0; i < number; ++i) {
+		if (user == userList.get("idList", 0)[i]["login"].asString()) {
+			faults = userList.get("idList", 0)[i]["fault"].asInt();
+			break;
+		}
+	}
+	if (faults < 0) {
+		return -2;		// No such user
+	}
+	faults += n;
+	userList["idList"][i]["fault"] = faults;
+	return faults;
 }
 
 string nowTime() {
@@ -230,8 +326,23 @@ void NewLog(std::vector<std::string> logParam) {
 	}
 	ss << logParam[logParam.size() - 1];
 	ss << endl;
+
+	WaitForSingleObject(mutx, INFINITE);
 	fout.open("serverLog.txt", fstream::in | fstream::out | fstream::app);
 	cout << ss.str();
 	fout << ss.str();
 	fout.close();
+	ReleaseMutex(mutx);
+}
+
+void msgDistr(string str) {
+	const int n = 1024;
+	if (str.length() > n-1) {
+		str[n - 1] = 0;
+	}
+	char buff[n];
+	strcpy(buff, str.c_str());
+	for (int i = 0; i < clients.size(); ++i) {
+		send(clients[i], buff, strlen(buff), 0);
+	}
 }

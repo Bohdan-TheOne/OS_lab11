@@ -87,6 +87,9 @@ unsigned int __stdcall startServer(void*) {
         WSACleanup();
         return 1;
     }
+
+    extern HANDLE mutx;
+    mutx = CreateMutex(0, FALSE, 0);
     NewLog(vector<string>{ "SERVER", "Ready for work", "Wait for connections..." });
     // Accept a client socket
     while (true) {
@@ -98,10 +101,12 @@ unsigned int __stdcall startServer(void*) {
             WSACleanup();
             return 1;
         }
-        _beginthreadex(0, 0, ClientTread, (void*)(&ClientSocket), 0, 0);
+        _beginthreadex(0, 0, ClientTread, (void*)(ClientSocket), 0, 0);
+        //ClientTread((void*)ClientSocket);
     }
 
     // No longer need server socket
+    CloseHandle(mutx);
     closesocket(ListenSocket);
     WSACleanup();
 
