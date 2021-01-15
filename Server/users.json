@@ -18,7 +18,13 @@
 			"fault" : 0,
 			"login" : "yuri",
 			"passw" : "yuriTheTop"
+		},
+		{
+			"admin" : false,
+			"fault" : 0,
+			"login" : "bengamin",
+			"passw" : "452353"
 		}
 	],
-	"number" : 3
+	"number" : 4
 }

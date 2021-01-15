@@ -24,7 +24,7 @@ unsigned int __stdcall ClientTread(void* threadParam) {
 
 	NewLog(vector<string>{ "SERVER", "Client connected" });
 	while (true) {
-		msgSize = recv(client, buff, 512, 0);
+		while (!(msgSize = recv(client, buff, 512, 0)));
 		if (msgSize == SOCKET_ERROR) {
 			NewLog(vector<string>{ "ERROR", "socket error" });
 			break;
@@ -131,6 +131,22 @@ unsigned int __stdcall ClientTread(void* threadParam) {
 					send(client, buff, strlen(buff), 0);
 				}
 			}
+			if (cmd == "FAULT") {
+				if (admin) {
+					int success = GetFaults(client);
+					if (success == -1) {
+						NewLog(vector<string>{ cmd, username, "Can`t send" });
+					}
+					else {
+						NewLog(vector<string>{ cmd, username, "Sent successfully" });
+					}
+				}
+				else {
+					NewLog(vector<string>{ cmd, username, "User is not admin" });
+					strcpy(buff, "ERR You do not have rights to do it.\r\n");
+					send(client, buff, strlen(buff), 0);
+				}
+			}
 		}
 		else {
 			NewLog(vector<string>{ cmd, username, "Invalid command" });
@@ -154,18 +170,20 @@ bool parseCMD(char* str, std::string& cmd, std::string& params) {
 	int n;
 	string tmp = str;
 	tmp = trim(tmp);
-	std::transform(tmp.begin(), tmp.end(), tmp.begin(), ::toupper);
 	if ((n = tmp.find(' ')) == -1) {
-		if (tmp != "QUIT")
+		std::transform(tmp.begin(), tmp.end(), tmp.begin(), ::toupper);
+		if ((tmp != "QUIT") && (cmd != "FAULT"))
 			return false;
 		cmd = tmp;
 		return true;
 	}
 	cmd = tmp.substr(0, n);
 	params = tmp.substr(n + 1, tmp.length());
+	std::transform(cmd.begin(), cmd.end(), cmd.begin(), ::toupper);
+
 	cmd = trim(cmd);
 	params = trim(params);
-	if ((cmd != "AUTH") && (cmd != "FILE") && (cmd != "LOGIN") && cmd != "SET")
+	if ((cmd != "AUTH") && (cmd != "FILE") && (cmd != "LOGIN") && (cmd != "SET") && (cmd != "SEND"))
 		return false;
 	return true;
 	return false;
@@ -219,9 +237,13 @@ int LogInUser(string str, string& user, bool& admin) {
 	}
 	Json::Value userList;
 	ifstream fin;
+
+	WaitForSingleObject(mutx, INFINITE);
 	fin.open("users.json");
 	fin >> userList;
 	fin.close();
+	ReleaseMutex(mutx);
+
 	int n = userList.get("number", 0).asInt();
 	for (int i = 0; i < n; ++i) {
 		if (login == userList.get("idList", 0)[i]["login"].asString()) {
@@ -292,9 +314,6 @@ bool sendToModer(string str) {
 }
 //SET <M> fanteak : let`s play csgo
 //SET yuri 1 let`s play ****
-
-//FAULT
-//FREZ 3 zumori 4|fanteak 5|yuri 213
 
 int SetFaults(string param, string& tUser) {
 	string user, text;
@@ -377,6 +396,37 @@ void msgDistr(string str) {
 	for (int i = 0; i < clients.size(); ++i) {
 		send(clients[i], buff, strlen(buff), 0);
 	}
+}
+
+//FAULT
+//FREZ 3 zumori 4|fanteak 5|yuri 213
+int GetFaults(SOCKET& admin) {
+	Json::Value userList;
+	ifstream fin;
+
+	WaitForSingleObject(mutx, INFINITE);
+	fin.open("users.json");
+	fin >> userList;
+	fin.close();
+	ReleaseMutex(mutx);
+
+	string out = "FREZ ";
+	int n = userList.get("number", 0).asInt();
+
+	//out += to_string(n) + " ";
+	for (int i = 0; i < n; ++i) {
+		out += userList.get("idList", 0)[i]["login"].asString() + " "
+			+ to_string(userList.get("idList", 0)[i]["fault"].asInt()) + " ";
+	}
+
+	const int max = 512;
+	char buff[max];
+	strcpy(buff, out.c_str());
+	int success = send(admin, buff, strlen(buff), 0);
+	if (success == SOCKET_ERROR) {
+		return -1;
+	}
+	return 0;
 }
 
 void NewLog(std::vector<std::string> logParam) {
