@@ -3,20 +3,20 @@
 ## Server
 
 ### As Unauthorised User
-- **AUTH** - *Register as new user*
-- **LOGIN** - *Login with existing account*
+- **AUTH** [username] [password] - *Register as new user*
+- **LOGIN** [username] [password] - *Login with existing account*
 - **QUIT** - *Close connection*
 
 ### As Authorised User
-- **SEND** - *Send message to all availible user*
+- **SEND** [message] - *Send message to all availible user*
 
 ### As Moderator only
-- **SET** - *Moderate messages*
+- **SET** [username] [number] [message] - *Moderate messages*
 - **FAULT** - *Get fault list*
 
 ## User
-- **ERR** - *Error message*
-- **INF** - *Informational message*
-- **EDI** - *To main moder to edit messages*
-- **MSG** - *Message from users*
-- **FREZ** - *Fault list send*
+- **ERR** [message] - *Error message*
+- **INF** [message] - *Informational message*
+- **EDI** [username] : [message] - *To main moder to edit messages*
+- **MSG** [message] - *Message from users*
+- **FREZ** [[username] [number]] - *Fault list send*
