@@ -19,4 +19,4 @@
 - **INF** - *Informational message*
 - **EDI** - *To main moder to edit messages*
 - **MSG** - *Message from users*
-- **FRES** - *Fault list send*
+- **FREZ** - *Fault list send*
