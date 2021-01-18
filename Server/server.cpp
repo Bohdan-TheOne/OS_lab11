@@ -30,7 +30,6 @@ unsigned int __stdcall ClientTread(void* threadParam) {
 			break;
 		}
 		buff[msgSize] = 0;
-		//cout << buff << endl;
 		NewLog(true, vector<string>{ "SERVER", "Message recieved" });
 		if (parseCMD(buff, cmd, params)) {
 			if (cmd == "QUIT") {
