@@ -16,6 +16,6 @@ bool GetMsg(std::string, std::string&, bool);
 bool sendToModer(std::string);
 void msgDistr(std::string);
 
-void NewLog(std::vector<std::string>);
+void NewLog(bool, std::vector<std::string>);
 #endif
 

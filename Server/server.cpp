@@ -22,18 +22,19 @@ unsigned int __stdcall ClientTread(void* threadParam) {
 	string username = "anon";
 	bool admin = false;
 
-	NewLog(vector<string>{ "SERVER", "Client connected" });
+	NewLog(true, vector<string>{ "SERVER", "Client connected" });
 	while (true) {
 		while (!(msgSize = recv(client, buff, 512, 0)));
 		if (msgSize == SOCKET_ERROR) {
-			NewLog(vector<string>{ "ERROR", "socket error" });
+			NewLog(true, vector<string>{ "ERROR", "socket error" });
 			break;
 		}
 		buff[msgSize] = 0;
-		NewLog(vector<string>{ "SERVER", "Message recieved" });
+		//cout << buff << endl;
+		NewLog(true, vector<string>{ "SERVER", "Message recieved" });
 		if (parseCMD(buff, cmd, params)) {
 			if (cmd == "QUIT") {
-				NewLog(vector<string>{ cmd, username });
+				NewLog(true, vector<string>{ cmd, username });
 				if (username == mainModer) {
 					moderOnline = false;
 				}
@@ -41,20 +42,20 @@ unsigned int __stdcall ClientTread(void* threadParam) {
 			}
 			if (cmd == "AUTH") {
 				if (auth) {
-					NewLog(vector<string>{ cmd, username, "Already logined" });
+					NewLog(true, vector<string>{ cmd, username, "Already logined" });
 					strcpy(buff, "ERR You are already logged in.\r\n");
 				} else {
 					int success = CreateUser(params, username);
 					if (success < 0) {
-						NewLog(vector<string>{ cmd, username, "Invalid command" });
+						NewLog(true, vector<string>{ cmd, username, "Invalid command" });
 						strcpy(buff, "ERR Can`t recognise command.\r\n");
 					}
 					else if (success > 0) {
-						NewLog(vector<string>{ cmd, username, "Username taken" });
+						NewLog(true, vector<string>{ cmd, username, "Username taken" });
 						strcpy(buff, "ERR This username is taken.\r\n");
 					}
 					else {
-						NewLog(vector<string>{ cmd, username, "Account created" });
+						NewLog(true, vector<string>{ cmd, username, "Account created" });
 						strcpy(buff, "INF User account created successfuly.\r\n");
 						auth = true;
 					}
@@ -63,24 +64,24 @@ unsigned int __stdcall ClientTread(void* threadParam) {
 			}
 			if (cmd == "LOGIN") {	// LOGIN yuri yuriTheTop
 				if (auth) {
-					NewLog(vector<string>{ cmd, username, "Already logined" });
+					NewLog(true, vector<string>{ cmd, username, "Already logined" });
 					strcpy(buff, "ERR You are already logged in.\r\n");
 				} else {
 					int success = LogInUser(params, username, admin);
 					if (success < 0) {
-						NewLog(vector<string>{ cmd, username, "Invalid command" });
+						NewLog(true, vector<string>{ cmd, username, "Invalid command" });
 						strcpy(buff, "ERR Can`t recognise command.\r\n");
 					}
 					else if (success == 1) {
-						NewLog(vector<string>{ cmd, username, "Wrong password" });
+						NewLog(true, vector<string>{ cmd, username, "Wrong password" });
 						strcpy(buff, "ERR Wrong password.\r\n");
 					}
 					else if (success == 2) {
-						NewLog(vector<string>{ cmd, username, "Wrong username" });
+						NewLog(true, vector<string>{ cmd, username, "Wrong username" });
 						strcpy(buff, "ERR No such username.\r\n");
 					}
 					else {
-						NewLog(vector<string>{ cmd, username, "User authorised" });
+						NewLog(true, vector<string>{ cmd, username, "User authorised" });
 						strcpy(buff, "INF Logged in successfuly.\r\n");
 						auth = true;
 						if (username == mainModer) {
@@ -94,16 +95,16 @@ unsigned int __stdcall ClientTread(void* threadParam) {
 			if (cmd == "SEND") {
 				if (auth) {
 					if (GetMsg(params, username, admin)) {
-						NewLog(vector<string>{ cmd, username, "Message recieved" });
+						NewLog(true, vector<string>{ cmd, username, "Message recieved" });
 					}
 					else {
-						NewLog(vector<string>{ cmd, username, "User is banned" });
+						NewLog(true, vector<string>{ cmd, username, "User is banned" });
 						strcpy(buff, "ERR Bad words exceded.\r\n");
 						send(client, buff, strlen(buff), 0);
 					}
 				}
 				else {
-					NewLog(vector<string>{ cmd, username, "User not logged" });
+					NewLog(true, vector<string>{ cmd, username, "User not logged" });
 					strcpy(buff, "ERR You are not logged in.\r\n");
 					send(client, buff, strlen(buff), 0);
 				}
@@ -113,20 +114,20 @@ unsigned int __stdcall ClientTread(void* threadParam) {
 					string tUser;
 					int success = SetFaults(params, tUser);
 					if (success == -1) {
-						NewLog(vector<string>{ cmd, params, username, "Invalid command" });
+						NewLog(true, vector<string>{ cmd, params, username, "Invalid command" });
 					} 
 					else if (success == -2) {
-						NewLog(vector<string>{ cmd, tUser, username, "No such user" });
+						NewLog(true, vector<string>{ cmd, tUser, username, "No such user" });
 					}
 					else if (success == -3) {
-						NewLog(vector<string>{ cmd, tUser, username, "User is admin" });
+						NewLog(true, vector<string>{ cmd, tUser, username, "User is admin" });
 					}
 					else {
-						NewLog(vector<string>{ cmd, tUser, "faults set to " + to_string(success) });
+						NewLog(true, vector<string>{ cmd, tUser, "faults set to " + to_string(success) });
 					}
 				}
 				else {
-					NewLog(vector<string>{ cmd, username, "User is not admin" });
+					NewLog(true, vector<string>{ cmd, username, "User is not admin" });
 					strcpy(buff, "ERR You do not have rights to do it.\r\n");
 					send(client, buff, strlen(buff), 0);
 				}
@@ -135,21 +136,21 @@ unsigned int __stdcall ClientTread(void* threadParam) {
 				if (admin) {
 					int success = GetFaults(client);
 					if (success == -1) {
-						NewLog(vector<string>{ cmd, username, "Can`t send" });
+						NewLog(true, vector<string>{ cmd, username, "Can`t send" });
 					}
 					else {
-						NewLog(vector<string>{ cmd, username, "Sent successfully" });
+						NewLog(true, vector<string>{ cmd, username, "Sent successfully" });
 					}
 				}
 				else {
-					NewLog(vector<string>{ cmd, username, "User is not admin" });
+					NewLog(true, vector<string>{ cmd, username, "User is not admin" });
 					strcpy(buff, "ERR You do not have rights to do it.\r\n");
 					send(client, buff, strlen(buff), 0);
 				}
 			}
 		}
 		else {
-			NewLog(vector<string>{ cmd, username, "Invalid command" });
+			NewLog(true, vector<string>{ buff, username, "Invalid command" });
 			strcpy(buff, "ERR Invalid command.\r\n");
 			send(client, buff, strlen(buff), 0);
 		}
@@ -170,10 +171,11 @@ bool parseCMD(char* str, std::string& cmd, std::string& params) {
 	int n;
 	string tmp = str;
 	tmp = trim(tmp);
-	if ((n = tmp.find(' ')) == -1) {
+	if ((n = tmp.find(' ')) == string::npos) {
 		std::transform(tmp.begin(), tmp.end(), tmp.begin(), ::toupper);
-		if ((tmp != "QUIT") && (cmd != "FAULT"))
+		if ((tmp != "QUIT") && (tmp != "FAULT")) {
 			return false;
+		}
 		cmd = tmp;
 		return true;
 	}
@@ -186,7 +188,6 @@ bool parseCMD(char* str, std::string& cmd, std::string& params) {
 	if ((cmd != "AUTH") && (cmd != "FILE") && (cmd != "LOGIN") && (cmd != "SET") && (cmd != "SEND"))
 		return false;
 	return true;
-	return false;
 }
 
 bool SplitString(string str, string& first, string& second) {
@@ -285,7 +286,7 @@ bool GetMsg(string str, string& user, bool admin) {
 	if (admin) {
 		out = "<M> ";
 	}
-	out += user + " : " + str + "\n";
+	out += user + " : " + str;
 	
 	if (moderOnline) {
 		if (sendToModer(out)) {
@@ -321,7 +322,7 @@ int SetFaults(string param, string& tUser) {
 		return -1;		// Wrong command
 	}
 	tUser = user;
-	if (user == "<M>") {
+	if (user == "<m>") {
 		msgDistr(param);
 		return -3;
 	}
@@ -361,6 +362,13 @@ int SetFaults(string param, string& tUser) {
 	faults += n;
 	userList["idList"][i]["fault"] = faults;
 
+	ofstream fout;
+	WaitForSingleObject(mutx, INFINITE);
+	fout.open("users.json");
+	fout << userList;
+	fout.close();
+	ReleaseMutex(mutx);
+
 	msgDistr(user + " : " + msg + "\n");
 	return faults;
 }
@@ -386,7 +394,7 @@ void msgDistr(string str) {
 	fout.close();
 	ReleaseMutex(mutx);
 
-	str = "MSG " + str;
+	str = "MSG " + str + '\n';
 	const int n = 512;
 	if (str.length() > n-1) {
 		str[n - 1] = 0;
@@ -429,10 +437,12 @@ int GetFaults(SOCKET& admin) {
 	return 0;
 }
 
-void NewLog(std::vector<std::string> logParam) {
+void NewLog(bool time, std::vector<std::string> logParam) {
 	ofstream fout;
 	stringstream ss;
-	ss << "[" << nowTime() << "]: ";
+	if (time) {
+		ss << "[" << nowTime() << "]: ";
+	}
 	for (int i = 0; i < logParam.size() - 1; ++i) {
 		ss << logParam[i] << " | ";
 	}

@@ -6,10 +6,13 @@ static int connectionNum = 0;
 unsigned int __stdcall startServer(void*);
 
 int main(void) {
-    NewLog(vector<string>{ "SERVER", "Starting..."});
+    NewLog(false, vector<string>{ ""});
+    NewLog(false, vector<string>{ "================================================================"});
+    NewLog(false, vector<string>{ ""});
+    NewLog(true, vector<string>{ "SERVER", "Starting..."});
     HANDLE main = (HANDLE)_beginthreadex(0, 0, startServer, NULL, 0, 0);
     if (!main) {
-        NewLog(vector<string>{ "ERROR", "Unable to create main thread"});
+        NewLog(true, vector<string>{ "ERROR", "Unable to create main thread"});
         return 1;
     }
     cout << "Press ESCAPE to terminate program\r\n";
@@ -36,7 +39,7 @@ unsigned int __stdcall startServer(void*) {
     // Initialize Winsock
     iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (iResult != 0) {
-        NewLog(vector<string>{ "ERROR", "WSAStartup failed", to_string(iResult) });
+        NewLog(true, vector<string>{ "ERROR", "WSAStartup failed", to_string(iResult) });
         printf("WSAStartup failed with error: %d\n", iResult);
         return 1;
     }
@@ -50,7 +53,7 @@ unsigned int __stdcall startServer(void*) {
     // Resolve the server address and port
     iResult = getaddrinfo(NULL, DEFAULT_PORT, &hints, &result);
     if (iResult != 0) {
-        NewLog(vector<string>{ "ERROR", "getaddrinfo failed", to_string(iResult) });
+        NewLog(true, vector<string>{ "ERROR", "getaddrinfo failed", to_string(iResult) });
         printf("getaddrinfo failed with error: %d\n", iResult);
         WSACleanup();
         return 1;
@@ -59,7 +62,7 @@ unsigned int __stdcall startServer(void*) {
     // Create a SOCKET for connecting to server
     ListenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
     if (ListenSocket == INVALID_SOCKET) {
-        NewLog(vector<string>{ "ERROR", "socket failed", to_string(iResult) });
+        NewLog(true, vector<string>{ "ERROR", "socket failed", to_string(iResult) });
         printf("socket failed with error: %ld\n", WSAGetLastError());
         freeaddrinfo(result);
         WSACleanup();
@@ -69,7 +72,7 @@ unsigned int __stdcall startServer(void*) {
     // Setup the TCP listening socket
     iResult = bind(ListenSocket, result->ai_addr, (int)result->ai_addrlen);
     if (iResult == SOCKET_ERROR) {
-        NewLog(vector<string>{ "ERROR", "bind failed", to_string(iResult) });
+        NewLog(true, vector<string>{ "ERROR", "bind failed", to_string(iResult) });
         printf("bind failed with error: %d\n", WSAGetLastError());
         freeaddrinfo(result);
         closesocket(ListenSocket);
@@ -81,7 +84,7 @@ unsigned int __stdcall startServer(void*) {
 
     iResult = listen(ListenSocket, SOMAXCONN);
     if (iResult == SOCKET_ERROR) {
-        NewLog(vector<string>{ "ERROR", "listen failed", to_string(iResult) });
+        NewLog(true, vector<string>{ "ERROR", "listen failed", to_string(iResult) });
         printf("listen failed with error: %d\n", WSAGetLastError());
         closesocket(ListenSocket);
         WSACleanup();
@@ -90,12 +93,12 @@ unsigned int __stdcall startServer(void*) {
 
     extern HANDLE mutx;
     mutx = CreateMutex(0, FALSE, 0);
-    NewLog(vector<string>{ "SERVER", "Ready for work", "Wait for connections..." });
+    NewLog(true, vector<string>{ "SERVER", "Ready for work", "Wait for connections..." });
     // Accept a client socket
     while (true) {
         ClientSocket = accept(ListenSocket, NULL, NULL);
         if (ClientSocket == INVALID_SOCKET) {
-            NewLog(vector<string>{ "ERROR", "accept failed", to_string(iResult) });
+            NewLog(true, vector<string>{ "ERROR", "accept failed", to_string(iResult) });
             printf("accept failed with error: %d\n", WSAGetLastError());
             closesocket(ListenSocket);
             WSACleanup();

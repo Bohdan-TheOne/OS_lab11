@@ -176,6 +176,7 @@ unsigned int WINAPI GetMsg(LPVOID Socket)
 		iResult = recv(ConnectSocket, recvbuf, DEFAULT_BUFLEN, 0);
 		if (iResult > 0)
 		{
+			recvbuf[iResult] = 0;
 			cout << "Bytes received: " << iResult << endl;
 			text = recvbuf;
 			if (SwitchDo(ConnectSocket, text) != 0)
@@ -188,6 +189,7 @@ unsigned int WINAPI GetMsg(LPVOID Socket)
 			if (iResult == 0)
 			{
 				cout << "Connection closed\n";
+				break;
 			}
 			else
 			{

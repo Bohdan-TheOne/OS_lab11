@@ -25,7 +25,7 @@ using namespace std;
 #pragma comment (lib, "AdvApi32.lib")
 
 #define DEFAULT_BUFLEN 512
-#define DEFAULT_PORT "65000"
+#define DEFAULT_PORT "27015"
 
 static HANDLE muthandle;
 
