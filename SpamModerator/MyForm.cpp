@@ -20,10 +20,11 @@ int moderatorNew::MyForm::receiveFaultsFromServer(SOCKET& connectSocket)
 		string argument(inputString);
 		numOfBadWords(argument);
 		string usersResults = "SEND ";
-		for (int i = 0; i < usersFaults.size(); i++)
+		for (int i = 0; i < usersFaults.size() - 1; i++)
 		{
 			usersResults = usersResults + "The user " + usersNames[i] + " has " + to_string(usersFaults[i]) + " bad words to maximum!\n";
 		}
+		userResults = usersResults + "The user " + usersNames[usersFaults.size() - 1] + " has " + to_string(usersFaults[usersFaults.size() - 1]) + " bad words to maximum!";
 		sendDataToServer(connectSocket, usersResults);
 		return EXIT_SUCCESS;
 	}
