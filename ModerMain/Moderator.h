@@ -1,6 +1,4 @@
 #pragma once
-#ifndef FUNC_H
-#define FUNC_H
 
 #define WIN32_LEAN_AND_MEAN
 
@@ -16,8 +14,12 @@
 #include <vector>
 #include <fstream>
 #include <ctime>
+#include <msclr\marshal_cppstd.h>
+#include <map>
 
 using namespace std;
+using namespace System;
+using namespace System::Windows::Forms;
 
 // Need to link with Ws2_32.lib, Mswsock.lib, and Advapi32.lib
 #pragma comment (lib, "Ws2_32.lib")
@@ -27,8 +29,6 @@ using namespace std;
 #define DEFAULT_BUFLEN 512
 #define DEFAULT_PORT "27015"
 
-static HANDLE muthandle;
-
 // Part of boyer moore
 void otherArrayFunc(string str, int otherArray[256]);
 
@@ -37,9 +37,6 @@ int BMSearch(string main, string find, vector<int>& result);
 
 // Connection to server
 int ConnectToServer(SOCKET& ConnectSocket);
-
-// Sent message from console
-unsigned int WINAPI OutMsg(LPVOID Socket);
 
 // Send an initial buffer
 int SentMsg(SOCKET& ConnectSocket, string msg);
@@ -60,6 +57,10 @@ string FindBW(string msg, fstream& fs);
 string GetTime();
 
 // Cleanup
-void CloseConnect(SOCKET& ConnectSocket, HANDLE& in, HANDLE& out);
+void CloseConnect(SOCKET& ConnectSocket, HANDLE& in);
 
-#endif
+//convert standart type to string to System::String^
+String^ StdToSys(string str);
+
+//convert System::String^ type of string to standart string
+const string SysToStd(String^ sysStr);

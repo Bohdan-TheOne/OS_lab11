@@ -1,4 +1,6 @@
-#include "func.h"
+#include "Moderator.h"
+
+HANDLE muthandle;
 
 // Part of boyer moore
 void otherArrayFunc(string str, int otherArray[256])
@@ -57,9 +59,8 @@ int ConnectToServer(SOCKET& ConnectSocket)
 
 	// Initialize Winsock
 	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
-	if (iResult != 0) 
+	if (iResult != 0)
 	{
-		cout << "WSAStartup failed with error: " << iResult << endl;
 		return 1;
 	}
 
@@ -70,30 +71,28 @@ int ConnectToServer(SOCKET& ConnectSocket)
 
 	// Resolve the server address and port
 	iResult = getaddrinfo("127.0.0.1", DEFAULT_PORT, &hints, &result);
-	if (iResult != 0) 
+	if (iResult != 0)
 	{
-		cout << "Getaddrinfo failed with error: " << iResult << endl;
 		WSACleanup();
 		return 1;
 	}
 
 	// Attempt to connect to an address until one succeeds
-	for (ptr = result; ptr != NULL;ptr = ptr->ai_next) 
+	for (ptr = result; ptr != NULL;ptr = ptr->ai_next)
 	{
 
 		// Create a SOCKET for connecting to server
 		ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype,
 			ptr->ai_protocol);
-		if (ConnectSocket == INVALID_SOCKET) 
+		if (ConnectSocket == INVALID_SOCKET)
 		{
-			cout << "Socket failed with error: " << WSAGetLastError() << endl;
 			WSACleanup();
 			return 1;
 		}
 
 		// Connect to server.
 		iResult = connect(ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
-		if (iResult == SOCKET_ERROR) 
+		if (iResult == SOCKET_ERROR)
 		{
 			closesocket(ConnectSocket);
 			ConnectSocket = INVALID_SOCKET;
@@ -106,38 +105,10 @@ int ConnectToServer(SOCKET& ConnectSocket)
 
 	if (ConnectSocket == INVALID_SOCKET)
 	{
-		cout << "Unable to connect to server!\n";
 		WSACleanup();
 		return 1;
 	}
 
-	muthandle = CreateMutex(0, FALSE, 0);
-
-	return 0;
-}
-
-// Sent message from console
-unsigned int WINAPI OutMsg(LPVOID Socket)
-{
-	SOCKET ConnectSocket = (SOCKET)Socket;
-	string msg;
-
-	while (_getch() != 27)
-	{
-		cout << "Enter command:\n";
-		getline(cin, msg);
-		int first = msg.find_first_of(' ');
-		string temp = msg.substr(0, first);
-
-		if (temp == "AUTH" || temp == "LOGIN" || temp == "QUIT" || temp == "SEND" || temp == "SET")
-		{
-			SentMsg(ConnectSocket, msg);
-		}
-		else
-		{
-			cout << "Check command whitch you want to send\n";
-		}
-	}
 	return 0;
 }
 
@@ -148,15 +119,13 @@ int SentMsg(SOCKET& ConnectSocket, string msg)
 
 	int iResult = send(ConnectSocket, msg.c_str(), msg.size(), 0);
 
-	if (iResult == SOCKET_ERROR) 
+	if (iResult == SOCKET_ERROR)
 	{
-		cout << "Send failed with error: " << WSAGetLastError() << endl;
+		MessageBox::Show("Send failed with error", "Sending error", MessageBoxButtons::OK, MessageBoxIcon::Error);
 		closesocket(ConnectSocket);
 		WSACleanup();
 		return 1;
 	}
-
-	cout << "Bytes Sent: " << iResult << endl;
 
 	ReleaseMutex(muthandle);
 
@@ -177,23 +146,22 @@ unsigned int WINAPI GetMsg(LPVOID Socket)
 		if (iResult > 0)
 		{
 			recvbuf[iResult] = 0;
-			cout << "Bytes received: " << iResult << endl;
 			text = recvbuf;
 			if (SwitchDo(ConnectSocket, text) != 0)
 			{
-				cout << "Wrong message from server\n";
+				MessageBox::Show("Wrong message from server", "Message error", MessageBoxButtons::OK, MessageBoxIcon::Error);
 			}
 		}
 		else
 		{
 			if (iResult == 0)
 			{
-				cout << "Connection closed\n";
+				MessageBox::Show("Server has ended", "Coonection end", MessageBoxButtons::OK, MessageBoxIcon::Error);
 				break;
 			}
 			else
 			{
-				cout << "Receive failed with error:" << WSAGetLastError() << endl;
+				MessageBox::Show("Receive failed with error", "Coonection end", MessageBoxButtons::OK, MessageBoxIcon::Error);
 				break;
 			}
 		}
@@ -210,7 +178,7 @@ int SwitchDo(SOCKET& ConnectSocket, string text)
 
 	if (temp == "MSG")
 	{
-		cout << msg;
+		msg;
 		return 0;
 	}
 	if (temp == "EDI")
@@ -220,19 +188,19 @@ int SwitchDo(SOCKET& ConnectSocket, string text)
 	}
 	if (temp == "ERR")
 	{
-		cout << msg;
+		MessageBox::Show(StdToSys(msg), "Error from server", MessageBoxButtons::OK, MessageBoxIcon::Error);
 		return 0;
 	}
 	if (temp == "INF")
 	{
-		cout << msg;
+		MessageBox::Show(StdToSys(msg), "Informationr from server", MessageBoxButtons::OK, MessageBoxIcon::Information);
 		return 0;
 	}
 
 	return 1;
 }
 
-// Parse text   
+// Parse text
 //<M> fanteak : let`s play csgo        SET <M> fanteak : let`s play csgo
 //yuri : let`s play csgo        SET yuri 1 let`s play ****
 string ParseText(string msg)
@@ -250,7 +218,7 @@ string ParseText(string msg)
 		fs << GetTime() << temp << " ";
 		temp = "SET " + temp + " " + FindBW(msg.substr(first + 3, msg.size()), fs);
 		fs.close();
-		return temp;	
+		return temp;
 	}
 }
 
@@ -305,15 +273,27 @@ string GetTime()
 }
 
 // Cleanup
-void CloseConnect(SOCKET& ConnectSocket, HANDLE& in, HANDLE& out)
+void CloseConnect(SOCKET& ConnectSocket, HANDLE& in)
 {
 	WaitForSingleObject(in, INFINITE);
-	WaitForSingleObject(out, INFINITE);
 
 	CloseHandle(in);
-	CloseHandle(out);
 	CloseHandle(muthandle);
 
+	SentMsg(ConnectSocket, "QUIT");
 	closesocket(ConnectSocket);
+
 	WSACleanup();
-} 
+}
+
+//convert standart type to string to System::String^
+String^ StdToSys(string str)
+{
+	return gcnew String(str.c_str());
+}
+
+//convert System::String^ type of string to standart string
+const string SysToStd(String^ sysStr)
+{
+	return (const char*)(Runtime::InteropServices::Marshal::StringToHGlobalAnsi(sysStr)).ToPointer();
+}
