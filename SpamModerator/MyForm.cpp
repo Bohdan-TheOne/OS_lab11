@@ -120,6 +120,6 @@ unsigned int __stdcall receiveMessages(void* data)
 			cout << "recv failed with error: " << WSAGetLastError() << endl;
 			return WSAGetLastError();
 		}
-	} while (receiveResult > 0);
+	} while (receiveResult >= 0);
 	return 0;
 } // MSG yuri : hello world
